@@ -1,11 +1,3 @@
-"""Predict property categories for a file of addresses.
-
-    python predict.py --input test.csv --output predictions.csv
-
-Input needs the columns `id` and `property_address` (.csv or .xlsx).
-Output has `id` and `categories`.
-"""
-
 import argparse
 import sys
 from pathlib import Path

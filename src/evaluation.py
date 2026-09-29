@@ -1,12 +1,3 @@
-"""Metrics, confusion matrix and error analysis.
-
-Used by train.py, and can also be run on its own to score the saved model on a
-labelled file it has NOT been trained on:
-    python evaluation.py --data ../holdout.xlsx
-(Scoring on the training file gives inflated numbers, because the saved model
-was refit on all of it.)
-"""
-
 import argparse
 import sys
 from pathlib import Path

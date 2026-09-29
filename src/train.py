@@ -1,15 +1,3 @@
-"""Train the address classifier and save it to best_model/model.joblib.
-
-Run from inside src/:
-    python train.py --data ../train_dataset.xlsx
-
-Steps:
-  1. Load + clean data, build duplicate-safe groups.
-  2. Split train/validation (stratified, grouped by cleaned address).
-  3. Fit on the train part, report validation metrics.
-  4. Refit the same pipeline on ALL rows and save it.
-"""
-
 import argparse
 import sys
 from pathlib import Path

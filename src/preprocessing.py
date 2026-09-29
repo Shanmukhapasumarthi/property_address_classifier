@@ -1,9 +1,3 @@
-"""Text cleaning, data loading and the train/validation split.
-
-Everything here comes from the notebook. The same `normalize_address` is used
-for training and prediction, so the two can't drift apart.
-"""
-
 import re
 import sys
 import unicodedata
