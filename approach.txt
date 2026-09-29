@@ -1,0 +1,67 @@
+APPROACH
+
+Task
+Classify a property address (free text) into: flat, houseorplot, landparcel,
+commercial unit, others. Training data: 10,032 rows, 5 classes (flat 3464,
+houseorplot 3047, others 1297, commercial unit 1156, landparcel 1068).
+
+1. Data audit
+Almost every address (10,028 of 10,032) had at least one non-ASCII or
+invisible character: zero-width characters, full-width digits, and Cyrillic /
+Greek letters that look like Latin ones. NFKC normalization fixes the
+full-width characters but not the look-alikes.
+
+2. Cleaning (src/preprocessing.py)
+NFKC normalization, then a hand-built map for the look-alike letters found in
+the data, a small punctuation map (dashes, curly quotes), removal of invisible
+format characters, lowercase, whitespace collapse. 399 replacement characters
+(U+FFFD) are left as they are, because the original characters can't be
+recovered. The audit was re-run after cleaning to check what was left.
+
+3. Split
+21 rows were duplicates of another cleaned address, and 5 addresses had
+conflicting labels. To avoid leakage, rows with the same cleaned address are
+kept in the same partition (StratifiedGroupKFold, 5 folds, seed 42, first fold
+as validation: 8,028 train / 2,004 validation). Conflicting labels were kept,
+not relabelled.
+
+4. Models tried (validation set)
+  Word TF-IDF + LinearSVC            acc 0.8663  macro F1 0.8479
+  Char TF-IDF (3,5) + LinearSVC      acc 0.8912  macro F1 0.8761
+  Word + Char (3,5) + LinearSVC      acc 0.8922  macro F1 0.8783
+Character n-grams help most, which fits noisy text with typos, abbreviations
+and odd spacing.
+
+5. Tuning
+  C: 0.1 to 5.0 tested, 0.5 and 1.0 were about equal.
+  class_weight: None (0.8815) was slightly better than balanced (0.8783).
+  Char n-gram range: (2,5) and (2,6) were best and about equal (0.8815).
+
+Final config: word (1,2) + char (2,5) TF-IDF, LinearSVC C=0.5, no class
+weights.
+  Validation: accuracy 0.8952, macro F1 0.8807.
+
+6. Things that did not help
+Hand-made keyword and structural features (keyword flags, lengths, counts)
+added to the TF-IDF features did not improve results. One version gave macro
+F1 0.8775 (about the same as without), the larger keyword set gave 0.8088
+(worse, mostly lower recall on commercial unit; the counts were also not
+scaled). They are not in the final model.
+
+7. Error analysis
+Most mistakes involve houseorplot: landparcel predicted as houseorplot (32),
+others as houseorplot (26), flat as houseorplot (25), houseorplot as flat
+(24). "others" is the weakest class (F1 about 0.82).
+
+8. Final model
+The chosen pipeline is refit on all 10,032 rows and saved as one file,
+best_model/model.joblib. Cleaning is inside the pipeline, so predict.py
+applies exactly the same cleaning as training.
+
+Changes from the notebook when moving to modules
+- The notebook's predict script used a simpler cleaning function (no
+  look-alike letter map, no punctuation map) than the one used in training.
+  The modular version uses one shared function.
+- The notebook saved the final model with C=1.0. The validated best config
+  used C=0.5, so the modular version uses C=0.5.
+- The model is now one pipeline file instead of three pickles.
